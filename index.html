@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>オンライン大富豪</title>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <title>オンライン大富豪 | 完全版</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
     <style>
         * { box-sizing: border-box; touch-action: manipulation; }
         body {
@@ -20,9 +20,8 @@
         }
         h1 { font-size: 1.5rem; margin: 5px 0 15px 0; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
         
-        /* 設定画面 */
         .setup-box {
-            background: rgba(0,0,0,0.75);
+            background: rgba(0,0,0,0.85);
             padding: 20px;
             border-radius: 12px;
             width: 100%;
@@ -33,27 +32,19 @@
         }
         .id-display {
             background: #222;
-            padding: 10px;
+            padding: 12px;
             border-radius: 6px;
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: bold;
             color: #ffeb3b;
             word-break: break-all;
             margin: 10px 0;
             user-select: all;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px; /* iOSのズーム防止 */
-            border: none;
-            border-radius: 6px;
-            margin-bottom: 12px;
-            text-align: center;
+            border: 1px solid #444;
         }
         button {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
@@ -62,11 +53,10 @@
             color: white;
             border-radius: 6px;
             transition: background 0.2s;
-            box-shadow: 0 3px 0 #e65100;
+            box-shadow: 0 4px 0 #e65100;
         }
-        button:active { transform: translateY(2px); box-shadow: 0 1px 0 #e65100; }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #e65100; }
         
-        /* ゲーム画面 */
         #game-room { width: 100%; max-width: 500px; display: none; }
         .status-bar {
             font-size: 1.1rem;
@@ -74,12 +64,11 @@
             color: #ffeb3b;
             margin-bottom: 15px;
             text-align: center;
-            background: rgba(0,0,0,0.4);
-            padding: 8px;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
             border-radius: 20px;
         }
         
-        /* 場（テーブル） */
         .table-title { font-size: 0.9rem; margin: 5px 0; opacity: 0.9; text-align: center;}
         .table-area {
             background: #2e7d32;
@@ -94,7 +83,6 @@
         }
         #table-empty { color: rgba(255,255,255,0.6); font-size: 0.9rem; }
 
-        /* 手札エリア */
         .hand-title { font-size: 0.9rem; margin: 5px 0; opacity: 0.9; }
         .my-hand {
             background: rgba(0,0,0,0.4);
@@ -111,7 +99,6 @@
             min-height: 90px;
         }
         
-        /* トランプカードのスタイル */
         .card {
             width: 55px;
             height: 80px;
@@ -125,17 +112,15 @@
             font-size: 16px;
             font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-            position: relative;
             transition: transform 0.15s ease;
             user-select: none;
             -webkit-user-select: none;
         }
-        .card .suit-top { align-self: flex-start; font-size: 12px; }
+        .card .suit-top { align-self: flex-start; font-size: 11px; }
         .card .number { align-self: center; font-size: 20px; margin-top: -5px; }
-        .card .suit-bottom { align-self: flex-end; font-size: 12px; transform: rotate(180deg); }
+        .card .suit-bottom { align-self: flex-end; font-size: 11px; transform: rotate(180deg); }
         .card.red { color: #d32f2f; }
         
-        /* カード選択時のアニメーション */
         .card.selected {
             transform: translateY(-15px);
             background: #fff9c4;
@@ -143,11 +128,12 @@
             border: 2px solid #ffb300;
         }
         
-        /* 操作ボタン */
         .controls { display: flex; gap: 10px; width: 100%; }
         .controls button { flex: 2; }
-        .controls button.pass-btn { background: #555; box-shadow: 0 3px 0 #333; flex: 1; }
-        .controls button.host-btn { background: #4caf50; box-shadow: 0 3px 0 #2e7d32; display: none; margin-bottom: 10px; }
+        .controls button.pass-btn { background: #555; box-shadow: 0 4px 0 #333; flex: 1; }
+        .controls button.host-btn { background: #4caf50; box-shadow: 0 4px 0 #2e7d32; display: none; margin-bottom: 10px; }
+        
+        .error-log { color: #ff5252; font-size: 0.85rem; margin-top: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -155,25 +141,26 @@
     <h1>🃏 オンライン大富豪</h1>
     
     <div class="setup-box" id="setup">
-        <p style="margin:0 0 5px 0; font-size:0.9rem;">あなたのURL（友達に送る用）:</p>
-        <div class="id-display" id="my-url">読み込み中...</div>
-        <p style="font-size: 0.8rem; color: #ccc; margin-bottom: 20px;">※上のURLをコピーして友達にLINEなどで送ってください</p>
+        <p style="margin:0 0 5px 0; font-size:0.9rem;">あなたの対戦URL:</p>
+        <div class="id-display" id="my-url">サーバー通信中...</div>
+        <p style="font-size: 0.8rem; color: #ccc; margin-bottom: 20px;">上のURLをコピーしてLINE等で友達に送ってください</p>
         
         <div id="guest-input-area" style="display:none;">
-            <p style="margin:0 0 5px 0; font-size:0.9rem; color:#ff9800;">友達からURLが届いた場合はこちら↓</p>
+            <p style="margin:0 0 10px 0; font-size:0.95rem; color:#ff9800; font-weight:bold;">友達の部屋のURLからアクセス中</p>
             <button onclick="connectToHostFromUrl()">友達の部屋に入る</button>
         </div>
+        <div class="error-log" id="error-msg"></div>
     </div>
 
     <div id="game-room">
-        <div class="status-bar" id="status">接続中...</div>
+        <div class="status-bar" id="status">接続を確立しています...</div>
         
         <div class="table-title">場に出ているカード</div>
         <div class="table-area" id="table">
             <p id="table-empty">場は空です</p>
         </div>
 
-        <button onclick="resetGame()" id="start-btn" class="host-btn">カードを配る (新ゲーム)</button>
+        <button onclick="resetGame()" id="start-btn" class="host-btn">カードを配る (新ゲーム開始)</button>
 
         <div class="my-hand">
             <div class="hand-title">あなたの手札 (タップして選択)</div>
@@ -187,15 +174,144 @@
     </div>
 
 <script>
+    // 強さ定義: 3=1, 4=2 ... K=11, A=12, 2=13
     const cardMap = {
         1: {n:'3', v:1}, 2: {n:'4', v:2}, 3: {n:'5', v:3}, 4: {n:'6', v:4},
         5: {n:'7', v:5}, 6: {n:'8', v:6}, 7: {n:'9', v:7}, 8: {n:'10', v:8},
         9: {n:'J', v:9}, 10: {n:'Q', v:10}, 11: {n:'K', v:11}, 12: {n:'A', v:12}, 13: {n:'2', v:13}
     };
 
-    let peer = new Peer();
+    // PeerJSの接続オプション（SSL/HTTPS必須環境に対応）
+    let peer = new Peer({
+        config: {'iceServers': [{ url: 'stun:stun.l.google.com:19302' }]},
+        debug: 1
+    });
+    
     let conn = null;
     let myHand = [];
     let selectedCards = [];
     let tableCard = null;
-    let tableCount = 0
+    let tableCount = 0;
+    let isMyTurn = false;
+    let amIHost = false;
+    let targetHostId = null;
+    let consecutivePasses = 0; // 連続パス回数の記録
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+
+    // サーバー接続成功時
+    peer.on('open', (id) => {
+        const currentUrl = window.location.href.split('?')[0];
+        const inviteUrl = `${currentUrl}?room=${id}`;
+        document.getElementById('my-url').innerText = inviteUrl;
+
+        if (roomParam) {
+            targetHostId = roomParam;
+            document.getElementById('guest-input-area').style.display = 'block';
+        }
+    });
+
+    // エラーハンドリング
+    peer.on('error', (err) => {
+        console.error(err);
+        document.getElementById('error-msg').innerText = "接続エラーが発生しました。ページを再読み込みしてください。";
+    });
+
+    // 相手からの接続をキャッチ (ホスト)
+    peer.on('connection', (connection) => {
+        conn = connection;
+        amIHost = true;
+        setupConnection();
+    });
+
+    // 自分から接続 (ゲスト)
+    function connectToFriend(friendId) {
+        conn = peer.connect(friendId);
+        amIHost = false;
+        setupConnection();
+    }
+
+    function connectToHostFromUrl() {
+        if(targetHostId) connectToFriend(targetHostId);
+    }
+
+    // データ通信の受信ロジック
+    function setupConnection() {
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('game-room').style.display = 'block';
+        
+        conn.on('open', () => {
+            document.getElementById('status').innerText = amIHost ? "接続完了！カードを配ってください" : "接続完了！親が配るのを待っています...";
+            if(amIHost) {
+                document.getElementById('start-btn').style.display = 'block';
+            }
+        });
+
+        conn.on('data', (data) => {
+            if (data.type === 'START') {
+                myHand = data.hand;
+                tableCard = null;
+                tableCount = 0;
+                consecutivePasses = 0;
+                isMyTurn = data.yourTurn;
+                updateUI();
+            } else if (data.type === 'PLAY') {
+                tableCard = data.cardValue;
+                tableCount = data.count;
+                consecutivePasses = 0; // カードが出たのでリセット
+                isMyTurn = true;
+                updateUI();
+                checkWinCondition();
+            } else if (data.type === 'PASS') {
+                consecutivePasses++;
+                // 2人プレイで相手がパス＝場が流れる
+                if (consecutivePasses >= 1) {
+                    tableCard = null;
+                    tableCount = 0;
+                    consecutivePasses = 0;
+                }
+                isMyTurn = true;
+                updateUI();
+            }
+        });
+        
+        conn.on('close', () => {
+            alert("対戦相手との接続が切れました。");
+            location.reload();
+        });
+    }
+
+    // ゲーム開始・リセット
+    function resetGame() {
+        let deck = [];
+        const suits = ['♠', '♥', '♦', '♣'];
+        for(let suit of suits) {
+            for(let key in cardMap) {
+                deck.push({ suit: suit, name: cardMap[key].n, value: cardMap[key].v });
+            }
+        }
+        deck.sort(() => Math.random() - 0.5);
+
+        // 各プレイヤーに10枚ずつ配る
+        const hand1 = deck.slice(0, 10).sort((a,b) => a.value - b.value);
+        const hand2 = deck.slice(10, 20).sort((a,b) => a.value - b.value);
+
+        myHand = hand1;
+        isMyTurn = true;
+        tableCard = null;
+        tableCount = 0;
+        consecutivePasses = 0;
+
+        conn.send({ type: 'START', hand: hand2, yourTurn: false });
+        updateUI();
+    }
+
+    // 画面描写の更新
+    function updateUI() {
+        const statusEl = document.getElementById('status');
+        if (isMyTurn) {
+            statusEl.innerText = "🌟 あなたのターンです";
+            statusEl.style.color = "#ffeb3b";
+        } else {
+            statusEl.innerText = "相手のターンを待っています...";
