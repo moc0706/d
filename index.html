@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>オンライン大富豪</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <style>
+        * { box-sizing: border-box; touch-action: manipulation; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #1b5e20;
+            color: white;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 { font-size: 1.5rem; margin: 5px 0 15px 0; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+        
+        /* 設定画面 */
+        .setup-box {
+            background: rgba(0,0,0,0.75);
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            margin-top: 20px;
+        }
+        .id-display {
+            background: #222;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #ffeb3b;
+            word-break: break-all;
+            margin: 10px 0;
+            user-select: all;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px; /* iOSのズーム防止 */
+            border: none;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #ff9800;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            transition: background 0.2s;
+            box-shadow: 0 3px 0 #e65100;
+        }
+        button:active { transform: translateY(2px); box-shadow: 0 1px 0 #e65100; }
+        
+        /* ゲーム画面 */
+        #game-room { width: 100%; max-width: 500px; display: none; }
+        .status-bar {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #ffeb3b;
+            margin-bottom: 15px;
+            text-align: center;
+            background: rgba(0,0,0,0.4);
+            padding: 8px;
+            border-radius: 20px;
+        }
+        
+        /* 場（テーブル） */
+        .table-title { font-size: 0.9rem; margin: 5px 0; opacity: 0.9; text-align: center;}
+        .table-area {
+            background: #2e7d32;
+            border: 3px solid #81c784;
+            border-radius: 12px;
+            height: 140px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+        }
+        #table-empty { color: rgba(255,255,255,0.6); font-size: 0.9rem; }
+
+        /* 手札エリア */
+        .hand-title { font-size: 0.9rem; margin: 5px 0; opacity: 0.9; }
+        .my-hand {
+            background: rgba(0,0,0,0.4);
+            padding: 10px;
+            border-radius: 12px;
+            width: 100%;
+        }
+        .hand-scroll {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 15px;
+            min-height: 90px;
+        }
+        
+        /* トランプカードのスタイル */
+        .card {
+            width: 55px;
+            height: 80px;
+            background: white;
+            color: black;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 6px 4px;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            position: relative;
+            transition: transform 0.15s ease;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .card .suit-top { align-self: flex-start; font-size: 12px; }
+        .card .number { align-self: center; font-size: 20px; margin-top: -5px; }
+        .card .suit-bottom { align-self: flex-end; font-size: 12px; transform: rotate(180deg); }
+        .card.red { color: #d32f2f; }
+        
+        /* カード選択時のアニメーション */
+        .card.selected {
+            transform: translateY(-15px);
+            background: #fff9c4;
+            box-shadow: 0 5px 15px rgba(255,235,59,0.5);
+            border: 2px solid #ffb300;
+        }
+        
+        /* 操作ボタン */
+        .controls { display: flex; gap: 10px; width: 100%; }
+        .controls button { flex: 2; }
+        .controls button.pass-btn { background: #555; box-shadow: 0 3px 0 #333; flex: 1; }
+        .controls button.host-btn { background: #4caf50; box-shadow: 0 3px 0 #2e7d32; display: none; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>🃏 オンライン大富豪</h1>
+    
+    <div class="setup-box" id="setup">
+        <p style="margin:0 0 5px 0; font-size:0.9rem;">あなたのURL（友達に送る用）:</p>
+        <div class="id-display" id="my-url">読み込み中...</div>
+        <p style="font-size: 0.8rem; color: #ccc; margin-bottom: 20px;">※上のURLをコピーして友達にLINEなどで送ってください</p>
+        
+        <div id="guest-input-area" style="display:none;">
+            <p style="margin:0 0 5px 0; font-size:0.9rem; color:#ff9800;">友達からURLが届いた場合はこちら↓</p>
+            <button onclick="connectToHostFromUrl()">友達の部屋に入る</button>
+        </div>
+    </div>
+
+    <div id="game-room">
+        <div class="status-bar" id="status">接続中...</div>
+        
+        <div class="table-title">場に出ているカード</div>
+        <div class="table-area" id="table">
+            <p id="table-empty">場は空です</p>
+        </div>
+
+        <button onclick="resetGame()" id="start-btn" class="host-btn">カードを配る (新ゲーム)</button>
+
+        <div class="my-hand">
+            <div class="hand-title">あなたの手札 (タップして選択)</div>
+            <div class="hand-scroll" id="hand-container"></div>
+            
+            <div class="controls">
+                <button onclick="passTurn()" class="pass-btn">パス</button>
+                <button onclick="playSelectedCards()">カードを出す</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const cardMap = {
+        1: {n:'3', v:1}, 2: {n:'4', v:2}, 3: {n:'5', v:3}, 4: {n:'6', v:4},
+        5: {n:'7', v:5}, 6: {n:'8', v:6}, 7: {n:'9', v:7}, 8: {n:'10', v:8},
+        9: {n:'J', v:9}, 10: {n:'Q', v:10}, 11: {n:'K', v:11}, 12: {n:'A', v:12}, 13: {n:'2', v:13}
+    };
+
+    let peer = new Peer();
+    let conn = null;
+    let myHand = [];
+    let selectedCards = [];
+    let tableCard = null;
+    let tableCount = 0
